@@ -1,0 +1,39 @@
+name: Compile TikZ to SVG
+
+on:
+  workflow_dispatch: # Cho phép kích hoạt thủ công hoặc qua API từ Google Apps Script
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.10'
+
+      - name: Install LaTeX & dvisvgm
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y texlive-latex-base texlive-latex-extra texlive-fonts-recommended dvisvgm python3-pip
+
+      - name: Install Python Dependencies
+        run: |
+          pip install gspread oauth2client
+
+      - name: Run TikZ Compiler Script
+        env:
+          GCP_SA_KEY: ${{ secrets.GCP_SA_KEY }}
+        run: |
+          python3 scripts/build_tikz.py
+
+      - name: Commit and Push generated SVG files
+        run: |
+          git config --global user.name "github-actions[bot]"
+          git config --global user.email "github-actions[bot]@users.noreply.github.com"
+          git add images/*.svg
+          git commit -m "Auto-compile TikZ figures to SVG [skip ci]" || echo "No changes to commit"
+          git push
