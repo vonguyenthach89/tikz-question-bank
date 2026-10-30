@@ -20,10 +20,17 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y texlive-latex-base texlive-latex-extra texlive-fonts-recommended dvisvgm python3-pip
 
-      - name: Install Python Dependencies
+    #  - name: Install Python Dependencies
+ #       run: |
+   #       pip install gspread oauth2client
+          
+      - name: Install dependencies
         run: |
           pip install gspread oauth2client
-
+          python -m pip install --upgrade pip
+          pip install gspread google-auth requests markdown
+          # Thêm các thư viện khác mà script của thầy đang dùng nếu có
+        
       - name: Run TikZ Compiler Script
         env:
           GCP_SA_KEY: ${{ secrets.GCP_SA_KEY }}
