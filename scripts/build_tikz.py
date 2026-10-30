@@ -8,7 +8,7 @@ GITHUB_USER = "vonguyenthach"  # Thay bằng username GitHub của thầy
 GITHUB_REPO = "tikz-question-bank"
 BRANCH = "main"
 
-SPREADSHEET_KEY = "DÁN_ID_FILE_GOOGLE_SHEET_CỦA_THẦY_VÀO_ĐÂY"
+SPREADSHEET_KEY = "1Yqo9L3cgyliMA4sS_X2-U8kU1fkc1GYfJux8TT1vmy0"
 SHEET_NAME = "NganHangCauHoi"  # Tên Tab chứa ngân hàng câu hỏi
 
 OUTPUT_DIR = "images"
