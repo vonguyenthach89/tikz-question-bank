@@ -70,13 +70,25 @@ def compile_tikz_to_svg(tikz_code: str, hash_md5: str) -> bool:
                 os.remove(f_temp)
 
 def process_tikz_from_sheet():
-    sa_key_env = os.getenv("GCP_SA_KEY")
-    if not sa_key_env:
-        print("⚠️ Không tìm thấy biến môi trường GCP_SA_KEY.")
-        return
+   # sa_key_env = os.getenv("GCP_SA_KEY")
+   # if not sa_key_env:
+   #     print("⚠️ Không tìm thấy biến môi trường GCP_SA_KEY.")
+   #     return
 
-    creds_dict = json.loads(sa_key_env)
-    gc = gspread.service_account_from_dict(creds_dict)
+    #creds_dict = json.loads(sa_key_env)
+    #gc = gspread.service_account_from_dict(creds_dict)
+
+    # Đọc chuỗi JSON từ biến môi trường GitHub Secret
+sa_key_json = os.environ.get("GCP_SA_KEY")
+if not sa_key_json:
+    raise ValueError("❌ Không tìm thấy biến môi trường GCP_SA_KEY!")
+
+# Parse JSON an toàn
+service_account_info = json.loads(sa_key_json)
+scopes = ["https://www.googleapis.com/auth/spreadsheets"]
+credentials = Credentials.from_service_account_info(service_account_info, scopes=scopes)
+gc = gspread.authorize(credentials)
+
     sh = gc.open_by_key(SPREADSHEET_KEY)
     worksheet = sh.worksheet(SHEET_NAME)
 
