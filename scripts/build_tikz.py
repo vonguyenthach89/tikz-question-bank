@@ -11,6 +11,22 @@ BRANCH = "main"
 SPREADSHEET_KEY = "1Yqo9L3cgyliMA4sS_X2-U8kU1fkc1GYfJux8TT1vmy0"
 SHEET_NAME = "NganHangCauHoi"  # Tên Tab chứa ngân hàng câu hỏi
 
+def process_tikz_from_sheet():
+    print("Đang kết nối tới Google Sheet...")
+    try:
+        sh = gc.open_by_key(SPREADSHEET_KEY)
+        print("Kết nối Google Sheet thành công!")
+        
+        worksheet = sh.worksheet("NganHangCauHoi") # Hoặc tên sheet của thầy
+        print(f"Đã mở sheet: {worksheet.title}")
+        
+        data = worksheet.get_all_records()
+        print(f"Tổng số dòng lấy được từ sheet: {len(data)}")
+        
+        # ... các xử lý tiếp theo ...
+    except Exception as e:
+        print(f"LỖI CHI TIẾT KHI ĐỌC SHEET: {str(e)}")
+        raise e
 OUTPUT_DIR = "images"
 os.makedirs(OUTPUT_DIR, exist_ok=True)
 
