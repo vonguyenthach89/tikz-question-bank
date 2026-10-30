@@ -4,7 +4,7 @@ import subprocess
 import json
 import gspread
 
-GITHUB_USER = "vonguyenthach"  # Thay bằng username GitHub của thầy
+GITHUB_USER = "vonguyenthach89"  # Thay bằng username GitHub của thầy
 GITHUB_REPO = "tikz-question-bank"
 BRANCH = "main"
 
