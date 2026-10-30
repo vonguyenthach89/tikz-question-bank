@@ -34,7 +34,12 @@ jobs:
         run: |
           git config --global user.name "github-actions[bot]"
           git config --global user.email "github-actions[bot]@users.noreply.github.com"
-          mkdir -p images
-          git add images/*.svg || true
-          git commit -m "Auto-compile TikZ figures to SVG [skip ci]" || echo "No changes to commit"
-          git push
+          
+          # Kiểm tra xem có file SVG nào được sinh ra hay không trước khi add
+          if [ -d "images" ] && ls images/*.svg 1> /dev/null 2>&1; then
+            git add images/*.svg
+            git commit -m "Auto-compile TikZ figures to SVG [skip ci]"
+            git push
+          else
+            echo "⚠️ Không tìm thấy file SVG mới nào để commit. Bỏ qua bước đẩy code."
+          fi
