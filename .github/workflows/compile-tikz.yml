@@ -1,52 +1,52 @@
-name: Compile TikZ to SVG
+name: Compile TikZ to SVG and Update Sheet
 
 on:
-  workflow_dispatch: # Cho phép kích hoạt thủ công hoặc qua API từ Google Apps Script
+  workflow_dispatch: # Cho phép thầy bấm nút chạy thủ công (Manual Trigger) trên GitHub
+  push:
+    branches:
+      - main  # Hoặc master tùy theo nhánh chính của thầy
 
 jobs:
   build:
     runs-on: ubuntu-latest
+
     steps:
+      # 1. Checkout mã nguồn kho lưu trữ
       - name: Checkout repository
         uses: actions/checkout@v4
 
+      # 2. Thiết lập môi trường Python
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
           python-version: '3.10'
 
-      - name: Install LaTeX & dvisvgm
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y texlive-latex-base texlive-latex-extra texlive-fonts-recommended dvisvgm python3-pip
-
-    #  - name: Install Python Dependencies
- #       run: |
-   #       pip install gspread oauth2client
-          
+      # 3. Cài đặt các thư viện Python cần thiết
       - name: Install dependencies
         run: |
-          pip install gspread oauth2client
           python -m pip install --upgrade pip
-          pip install gspread google-auth requests markdown
-          # Thêm các thư viện khác mà script của thầy đang dùng nếu có
-        
+          pip install gspread google-auth requests
+
+      # 4. Chạy script Python biên dịch TikZ và cập nhật Google Sheet
       - name: Run TikZ Compiler Script
         env:
           GCP_SA_KEY: ${{ secrets.GCP_SA_KEY }}
-        run: |
-          python3 scripts/build_tikz.py
+          SPREADSHEET_KEY: "1Yqo9L3cgyliMA4sS_X2-U8kU1fkc1GYfJux8TT1vmy0"
+          GITHUB_REPOSITORY_OWNER: ${{ github.repository_owner }}
+          GITHUB_REPOSITORY_NAME: ${{ github.event.repository.name }}
+        run: python3 scripts/build_tikz.py
 
+      # 5. Commit và Push các file SVG mới sinh ra (có cơ chế an toàn chống lỗi 128)
       - name: Commit and Push generated SVG files
         run: |
           git config --global user.name "github-actions[bot]"
           git config --global user.email "github-actions[bot]@users.noreply.github.com"
           
-          # Kiểm tra xem có file SVG nào được sinh ra hay không trước khi add
+          # Kiểm tra nếu thư mục images tồn tại và có chứa ít nhất một file .svg thì mới commit & push
           if [ -d "images" ] && ls images/*.svg 1> /dev/null 2>&1; then
             git add images/*.svg
             git commit -m "Auto-compile TikZ figures to SVG [skip ci]"
             git push
           else
-            echo "⚠️ Không tìm thấy file SVG mới nào để commit. Bỏ qua bước đẩy code."
+            echo "⚠️ Không tìm thấy file SVG mới nào được sinh ra. Bỏ qua bước đẩy code lên Git."
           fi
