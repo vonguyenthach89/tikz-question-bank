@@ -5,6 +5,7 @@ import hashlib
 import re
 from google.oauth2.service_account import Credentials
 import gspread
+import time
 
 # Cấu hình thông số (có thể lấy từ biến môi trường hoặc cấu hình trực tiếp)
 SPREADSHEET_KEY = os.environ.get("SPREADSHEET_KEY", "1Yqo9L3cgyliMA4sS_X2-U8kU1fkc1GYfJux8TT1vmy0")
@@ -68,24 +69,21 @@ def process_tikz_from_sheet():
 
     print("✅ Kết nối Google Cloud thành công!")
 
-    # 2. Mở Google Sheet và chọn Sheet chứa câu hỏi (ví dụ: 'NganHangCauHoi')
+    # 2. Mở Google Sheet và chọn Sheet chứa câu hỏi
     sh = gc.open_by_key(SPREADSHEET_KEY)
     worksheet = sh.worksheet("NganHangCauHoi")
     print(f"📂 Đã mở Sheet: {worksheet.title}")
 
-    # Lấy toàn bộ dữ liệu dạng danh sách các dict hoặc list
+    # Lấy toàn bộ dữ liệu dạng danh sách các list
     rows = worksheet.get_all_values()
     if len(rows) <= 1:
         print("⚠️ Sheet hiện không có dữ liệu câu hỏi nào.")
         return
 
     header = rows[0]
-    print(f"📊 Cấu trúc cột nhận được: {header}")
-
-    # Giả sử cấu trúc cột chuẩn theo quy ước:
-    # [0: MaDinhDanh, 1: ID, 2: NoiDung, 3: DapAnA, 4: DapAnB, 5: DapAnC, 6: DapAnD, 7: DapAnDung, 8: Loai_Cau, 9: MaTikz]
-    
     updated_count = 0
+    
+    # Duyệt qua từng dòng và thực hiện thay đổi trên bộ nhớ trước
     for row_idx in range(1, len(rows)):
         row = rows[row_idx]
         if len(row) < 3:
@@ -103,7 +101,6 @@ def process_tikz_from_sheet():
         tikz_pattern = re.compile(r'(\\begin\{tikzpicture\}.*?\\end\{tikzpicture\})', re.DOTALL)
         match = tikz_pattern.search(noi_dung)
         
-        ma_tikz_val = ""
         if match:
             tikz_code = match.group(1)
             print(f"🔍 Phát hiện mã TikZ tại dòng {row_num} (Mã định danh: {ma_dinh_danh})")
@@ -111,15 +108,17 @@ def process_tikz_from_sheet():
             # Biên dịch ra SVG và lấy link CDN
             cdn_url, svg_filename = compile_tikz_to_svg(tikz_code)
             if cdn_url:
-                # Thay thế khối TikZ bằng thẻ ảnh SVG CDN hoàn toàn tự động trong cột Nội Dung
                 img_tag = f'<img src="{cdn_url}" alt="TikZ Figure" class="img-fluid"/>'
                 noi_dung = tikz_pattern.sub(img_tag, noi_dung)
-                ma_tikz_val = tikz_code # Lưu mã TikZ gốc vào cột MaTikz
+                ma_tikz_val = tikz_code 
                 
-                # Cập nhật lại giá trị trên Sheet
+                # Cập nhật trực tiếp từng ô nhưng có chèn thời gian nghỉ (sleep) nhỏ để chống tràn quota (429)
                 worksheet.update_cell(row_num, 1, ma_dinh_danh) # Cột A: MaDinhDanh
-                worksheet.update_cell(row_num, 3, noi_dung)    # Cột C: NoiDung (đã thay bằng ảnh SVG)
+                time.sleep(1) # Nghỉ 1 giây để tránh vượt hạn mức write requests của Google API
+                worksheet.update_cell(row_num, 3, noi_dung)    # Cột C: NoiDung
+                time.sleep(1)
                 worksheet.update_cell(row_num, 10, ma_tikz_val) # Cột J: MaTikz
+                time.sleep(1)
                 
                 updated_count += 1
 
