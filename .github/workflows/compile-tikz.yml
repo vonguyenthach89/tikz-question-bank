@@ -24,10 +24,10 @@ jobs:
         with:
           python-version: '3.10'
       # 3. Cài đặt các công cụ LaTeX và dvisvgm lên máy chủ GitHub
-      - name: Install LaTeX and dvisvgm tools
+      - name: Install LaTeX and pdf2svg tools
         run: |
           sudo apt-get update
-          sudo apt-get install -y texlive-latex-base texlive-latex-extra texlive-pictures texlive-science dvisvgm
+          sudo apt-get install -y texlive-latex-base texlive-latex-extra texlive-pictures texlive-science pdf2svg
       
       # 4. Cài đặt các thư viện Python cần thiết
       - name: Install dependencies
