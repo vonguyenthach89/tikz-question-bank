@@ -38,7 +38,8 @@ def compile_tikz_to_svg(tikz_code):
 \\usepackage{{tikz}}
 \\usepackage{{tkz-tab}}
 \\usepackage{{tkz-euclide}}
-\\usetikzlibrary{{shapes.geometric,calc,arrows,arrows.meta,intersections,angles,quotes}}
+\\usetikzlibrary{{shapes.geometric,calc,arrows,arrows.meta,intersections,angles,quotes,patterns}}
+\\begin{{document}}
 \\begin{{document}}
 {tikz_code}
 \\end{{document}}
