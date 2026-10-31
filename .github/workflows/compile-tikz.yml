@@ -23,14 +23,19 @@ jobs:
         uses: actions/setup-python@v5
         with:
           python-version: '3.10'
-
-      # 3. Cài đặt các thư viện Python cần thiết
+      # 3. Cài đặt các công cụ LaTeX và dvisvgm lên máy chủ GitHub
+      - name: Install LaTeX and dvisvgm tools
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y texlive-latex-base texlive-latex-extra texlive-pictures dvisvgm
+      
+      # 4. Cài đặt các thư viện Python cần thiết
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
           pip install gspread google-auth requests
 
-      # 4. Chạy script Python biên dịch TikZ và cập nhật Google Sheet
+      # 5. Chạy script Python biên dịch TikZ và cập nhật Google Sheet
       - name: Run TikZ Compiler Script
         env:
           GCP_SA_KEY: ${{ secrets.GCP_SA_KEY }}
@@ -39,7 +44,7 @@ jobs:
           GITHUB_REPOSITORY_NAME: ${{ github.event.repository.name }}
         run: python3 scripts/build_tikz.py
 
-      # 5. Commit và Push các file SVG mới sinh ra (có cơ chế an toàn chống lỗi 128)
+      # 6. Commit và Push các file SVG mới sinh ra (có cơ chế an toàn chống lỗi 128)
       - name: Commit and Push generated SVG files
         run: |
           git config --global user.name "github-actions[bot]"
