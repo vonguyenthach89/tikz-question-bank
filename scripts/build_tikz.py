@@ -4,9 +4,10 @@ import json
 import hashlib
 import re
 import time
+import subprocess
+import tempfile
 from google.oauth2.service_account import Credentials
 import gspread
-
 SPREADSHEET_KEY = os.environ.get("SPREADSHEET_KEY", "")
 OUTPUT_DIR = "images"
 
