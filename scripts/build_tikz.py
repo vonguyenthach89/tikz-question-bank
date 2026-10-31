@@ -120,6 +120,9 @@ def process_tikz_from_sheet():
         return
 
     updated_count = 0
+    # Copy toàn bộ bảng dữ liệu để cập nhật offline trong bộ nhớ
+    modified_rows = [list(r) for r in rows]
+
     for row_idx in range(1, len(rows)):
         row = rows[row_idx]
         row_num = row_idx + 1 # Dòng thực tế trên Sheet
@@ -131,7 +134,6 @@ def process_tikz_from_sheet():
         noi_dung = row[2] if len(row) > 2 else ""
         ma_tikz_val = row[9] if len(row) > 9 else "" # Cột J: MaTikz
         
-        # Chuẩn hóa kiểm tra mã TikZ (chấp nhận cả tikpicture nếu gõ nhầm)
         if ma_tikz_val and ("\\begin{tikzpicture}" in ma_tikz_val or "\\begin{tikpicture}" in ma_tikz_val):
             first_char_id = id_val[0] if id_val else "X"
             ma_dinh_danh = f"{first_char_id}{row_num}"
@@ -145,14 +147,21 @@ def process_tikz_from_sheet():
                 if img_tag not in noi_dung:
                     noi_dung = noi_dung + "\n" + img_tag
                 
-                worksheet.update_cell(row_num, 1, ma_dinh_danh) # Cột A: MaDinhDanh
-                time.sleep(1)
-                worksheet.update_cell(row_num, 3, noi_dung)    # Cột C: NoiDung (chèn thẻ ảnh)
-                time.sleep(1)
+                # Cập nhật trực tiếp vào mảng trong RAM thay vì gửi API ngay lập tức
+                modified_rows[row_idx][0] = ma_dinh_danh # Cột A (index 0)
+                modified_rows[row_idx][2] = noi_dung      # Cột C (index 2)
                 
                 updated_count += 1
 
-    print(f"🎉 Hoàn thành xử lý! Đã biên dịch và cập nhật thành công {updated_count} câu hỏi từ cột MaTikz.")
+    # Nếu có thay đổi, gửi 1 lệnh duy nhất cập nhật toàn bộ mảng dữ liệu lên Sheet
+    if updated_count > 0:
+        print(f"📤 Đang thực hiện Batch Update {updated_count} câu hỏi lên Google Sheet...")
+        worksheet.update(values=modified_rows, range_name="A1")
+        print("✅ Đã cập nhật thành công toàn bộ dữ liệu lên Google Sheet!")
+    else:
+        print("ℹ️ Không có câu hỏi nào cần cập nhật mới.")
+
+    print(f"🎉 Hoàn thành xử lý! Đã biên dịch và ghi nhận thành công {updated_count} câu hỏi từ cột MaTikz.")
 
 if __name__ == "__main__":
     try:
