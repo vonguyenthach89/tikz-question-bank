@@ -20,33 +20,35 @@ def compile_tikz_to_svg(tikz_code):
     try:
         os.makedirs(OUTPUT_DIR, exist_ok=True)
         
-        # Tạo mã hash MD5 từ nội dung TikZ để làm tên file cố định
+        # Tạo mã hash MD5 cố định từ mã TikZ
         tikz_hash = hashlib.md5(tikz_code.encode('utf-8')).hexdigest()
         svg_filename = f"{tikz_hash}.svg"
         svg_path = os.path.join(OUTPUT_DIR, svg_filename)
         
-        # Nếu file SVG đã tồn tại, dùng luôn để tiết kiệm thời gian biên dịch
+        # Nếu file SVG đã biên dịch trước đó, dùng luôn
         if os.path.exists(svg_path):
             github_owner = os.environ.get("GITHUB_REPOSITORY_OWNER", "")
             github_repo = os.environ.get("GITHUB_REPOSITORY_NAME", "")
             cdn_url = f"https://cdn.jsdelivr.net/gh/{github_owner}/{github_repo}@main/{OUTPUT_DIR}/{svg_filename}"
             return cdn_url, svg_filename
 
-        # Tạo file .tex tạm thời bọc mã TikZ chuẩn
-        latex_content = f"""
-\\documentclass[tikz,border=2pt]{{standalone}}
-\\usepackage{{tikz, amsmath, amssymb}}
-\\begin{document}
+        # Đã escape tất cả ngoặc nhọn LaTeX thành {{ và }} để tránh lỗi Python f-string
+        latex_content = f"""\\documentclass[tikz,border=2pt]{{standalone}}
+\\usepackage{{amsmath,amssymb}}
+\\usepackage{{tikz}}
+\\usepackage{{tkz-tab}}
+\\usepackage{{tkz-euclide}}
+\\usetikzlibrary{{shapes.geometric,calc,arrows,arrows.meta,intersections,angles,quotes}}
+\\begin{{document}}
 {tikz_code}
-\\end{document}
+\\end{{document}}
 """
         with tempfile.TemporaryDirectory() as tmpdir:
             tex_file = os.path.join(tmpdir, "figure.tex")
             with open(tex_file, "w", encoding="utf-8") as f:
                 f.write(latex_content)
                 
-            # 1. Chạy pdflatex để sinh file dvi (hoặc pdf)
-            # Dùng chế độ -interaction=nonstopmode để không bị dừng nếu có lỗi cú pháp nhỏ
+            # 1. Chạy pdflatex biên dịch file LaTeX
             subprocess.run(
                 ["pdflatex", "-interaction=nonstopmode", "figure.tex"],
                 cwd=tmpdir,
@@ -55,11 +57,7 @@ def compile_tikz_to_svg(tikz_code):
                 check=True
             )
             
-            # 2. Dùng dvisvgm để chuyển đổi file dvi sang svg sắc nét
-            dvi_file = os.path.join(tmpdir, "figure.dvi")
-            temp_svg = os.path.join(tmpdir, "figure.svg")
-            
-            # Nếu dùng pdflatex sinh ra pdf thì có thể dùng lệnh dvisvgm --pdf
+            # 2. Dùng dvisvgm chuyển đổi file PDF thành SVG
             subprocess.run(
                 ["dvisvgm", "--pdf", "figure.pdf", "-o", svg_path],
                 cwd=tmpdir,
