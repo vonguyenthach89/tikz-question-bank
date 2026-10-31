@@ -50,11 +50,18 @@ jobs:
           git config --global user.name "github-actions[bot]"
           git config --global user.email "github-actions[bot]@users.noreply.github.com"
           
-          # Kiểm tra nếu thư mục images tồn tại và có chứa ít nhất một file .svg thì mới commit & push
+          # Kiểm tra xem có thư mục images và file SVG hay không
           if [ -d "images" ] && ls images/*.svg 1> /dev/null 2>&1; then
             git add images/*.svg
-            git commit -m "Auto-compile TikZ figures to SVG [skip ci]"
-            git push
+            
+            # Kiểm tra xem có thay đổi thực sự nào được staged hay không trước khi commit
+            if git diff --staged --quiet; then
+              echo "ℹ️ Các file SVG không có thay đổi mới nào so với kho lưu trữ. Bỏ qua bước commit."
+            else
+              git commit -m "Auto-compile TikZ figures to SVG [skip ci]"
+              git push
+              echo "✅ Đã đẩy các file SVG mới lên GitHub thành công!"
+            fi
           else
-            echo "⚠️ Không tìm thấy file SVG mới nào được sinh ra. Bỏ qua bước đẩy code lên Git."
+            echo "⚠️ Không tìm thấy file SVG nào."
           fi
