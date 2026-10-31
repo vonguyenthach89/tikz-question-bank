@@ -10,37 +10,73 @@ import gspread
 SPREADSHEET_KEY = os.environ.get("SPREADSHEET_KEY", "")
 OUTPUT_DIR = "images"
 
+import subprocess
+import tempfile
+
 def compile_tikz_to_svg(tikz_code):
-    """Biên dịch mã TikZ thành SVG và trả về link CDN jsDelivr."""
+    """
+    Biên dịch mã TikZ thực tế thành SVG bằng pdflatex và dvisvgm trên Ubuntu runner.
+    """
     try:
         os.makedirs(OUTPUT_DIR, exist_ok=True)
         
-        # Tạo mã hash MD5 duy nhất cho khối TikZ
+        # Tạo mã hash MD5 từ nội dung TikZ để làm tên file cố định
         tikz_hash = hashlib.md5(tikz_code.encode('utf-8')).hexdigest()
         svg_filename = f"{tikz_hash}.svg"
         svg_path = os.path.join(OUTPUT_DIR, svg_filename)
         
-        if not os.path.exists(svg_path):
-            svg_content = f"""<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200" width="200" height="200">
-  <style>
-    .edge {{ stroke: black; stroke-width: 1.5; fill: none; }}
-    .node {{ fill: black; }}
-  </style>
-  <rect width="100%" height="100%" fill="white"/>
-  <circle cx="100" cy="100" r="40" class="edge" />
-  <text x="100" y="105" font-size="12" text-anchor="middle" fill="black">TikZ Figure</text>
-</svg>"""
-            with open(svg_path, "w", encoding="utf-8") as f:
-                f.write(svg_content)
+        # Nếu file SVG đã tồn tại, dùng luôn để tiết kiệm thời gian biên dịch
+        if os.path.exists(svg_path):
+            github_owner = os.environ.get("GITHUB_REPOSITORY_OWNER", "")
+            github_repo = os.environ.get("GITHUB_REPOSITORY_NAME", "")
+            cdn_url = f"https://cdn.jsdelivr.net/gh/{github_owner}/{github_repo}@main/{OUTPUT_DIR}/{svg_filename}"
+            return cdn_url, svg_filename
+
+        # Tạo file .tex tạm thời bọc mã TikZ chuẩn
+        latex_content = f"""
+\\documentclass[tikz,border=2pt]{{standalone}}
+\\usepackage{{tikz, amsmath, amssymb}}
+\\begin{document}
+{tikz_code}
+\\end{document}
+"""
+        with tempfile.TemporaryDirectory() as tmpdir:
+            tex_file = os.path.join(tmpdir, "figure.tex")
+            with open(tex_file, "w", encoding="utf-8") as f:
+                f.write(latex_content)
                 
+            # 1. Chạy pdflatex để sinh file dvi (hoặc pdf)
+            # Dùng chế độ -interaction=nonstopmode để không bị dừng nếu có lỗi cú pháp nhỏ
+            subprocess.run(
+                ["pdflatex", "-interaction=nonstopmode", "figure.tex"],
+                cwd=tmpdir,
+                stdout=subprocess.DEVNULL,
+                stderr=subprocess.DEVNULL,
+                check=True
+            )
+            
+            # 2. Dùng dvisvgm để chuyển đổi file dvi sang svg sắc nét
+            dvi_file = os.path.join(tmpdir, "figure.dvi")
+            temp_svg = os.path.join(tmpdir, "figure.svg")
+            
+            # Nếu dùng pdflatex sinh ra pdf thì có thể dùng lệnh dvisvgm --pdf
+            subprocess.run(
+                ["dvisvgm", "--pdf", "figure.pdf", "-o", svg_path],
+                cwd=tmpdir,
+                stdout=subprocess.DEVNULL,
+                stderr=subprocess.DEVNULL,
+                check=True
+            )
+
+        # Lấy link CDN jsDelivr
         github_owner = os.environ.get("GITHUB_REPOSITORY_OWNER", "")
         github_repo = os.environ.get("GITHUB_REPOSITORY_NAME", "")
-        
         cdn_url = f"https://cdn.jsdelivr.net/gh/{github_owner}/{github_repo}@main/{OUTPUT_DIR}/{svg_filename}"
+        
         return cdn_url, svg_filename
         
     except Exception as e:
-        print(f"⚠️ Lỗi khi biên dịch TikZ: {str(e)}")
+        print(f"⚠️ Lỗi biên dịch LaTeX/TikZ thực tế: {str(e)}")
         return None, None
 
 def process_tikz_from_sheet():
