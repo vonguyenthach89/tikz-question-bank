@@ -37,11 +37,15 @@ def compile_tikz_to_svg(tikz_code):
 
         # Cấu trúc Template LaTeX chuẩn cho TikZ / tkz-tab / tkz-euclide
         latex_content = f"""\\documentclass[tikz,border=2pt]{{standalone}}
-\\usepackage{{amsmath,amssymb}}
+\\usepackage{{amsmath,amssymb,yhmath,mathrsfs,fontawesome}}
+\\usepackage{{circuitikz}}
+\\usepackage{{pgfplots}}
+\\pgfplotsset{{compat=1.18}}
 \\usepackage{{tikz}}
 \\usepackage{{tkz-tab}}
 \\usepackage{{tkz-euclide}}
-\\usetikzlibrary{{shapes.geometric,calc,arrows,arrows.meta,intersections,angles,quotes,patterns}}
+\\usepackage{{tikz-3dplot}}
+\\usetikzlibrary{{shapes.geometric,arrows,calc,intersections,angles,quotes,patterns,snakes,positioning,shapes.misc,arrows,patterns,decorations.text}}
 \\begin{{document}}
 {tikz_code}
 \\end{{document}}
